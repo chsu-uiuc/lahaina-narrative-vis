@@ -26,7 +26,10 @@ Promise.all([
 
     const parseM = d3.utcParse("%Y-%m");
     const parseD = d3.utcParse("%Y-%m-%d");
-    const hDates = hotel.series.map(d=> parseM(d.m));
+    // Monthly values represent the whole month: plot them at mid-month
+    // so they sit on the correct side of the exact-dated event lines
+    const parseMid = ym => parseD(`${ym}-15`);
+    const hDates = hotel.series.map(d=> parseMid(d.m));
 
     const x = d3.scaleUtc().range([MARGIN.left, CHART_WIDTH - MARGIN.right]);
     const y = d3.scaleLinear()
@@ -55,8 +58,9 @@ Promise.all([
 
     // seasonal baselines: calendar-month values mapped onto 2023 dates
     const blLine = key => d3.line()
-        .x(b => x(parseM(`2023-${String(b.month).padStart(2, "0")}`)))
+        .x(b => x(parseMid(`2023-${String(b.month).padStart(2, "0")}`)))
         .y(b=> y(b[key]));
+    // 2019 and 2022 baseline lines
     const bl19 = plot.append("path")
                     .datum(hotel.baseline)
                     .attr("fill", "none")
@@ -67,7 +71,16 @@ Promise.all([
                     .attr("fill", "none")
                     .attr("stroke", "#bbb")
                     .attr("stroke-dasharray", "2 3");
-
+    // 2019 and 2022 text
+    const blLabel19 = plot.append("text")
+                        .attr("font-size", 11)
+                        .attr("fill", "#999")
+                        .text("2019 Baseline");
+    const blLabel22 = plot.append("text")
+                        .attr("font-size", 11)
+                        .attr("fill", "#bbb")
+                        .text("2022 Baseline");
+    // hotel occupancy line
     const occLine = d3.line()
                         .x((d, i) => x(hDates[i]))
                         .y(d=> y(d.occ));
@@ -80,13 +93,23 @@ Promise.all([
     const eventG = plot.append("g");
 
     // Reframe the chart: slide the x domain and swap event lines.
-    function frameChart(m0, m1, eventDates, showBl=true, dur=750) {
-        x.domain([parseM(m0), parseM(m1)]);
+    function frameChart(m0, m1, eventDates, showBl=true, dur=950) {
+        x.domain([parseMid(m0), parseMid(m1)]);
         const t = chartSvg.transition().duration(dur).ease(d3.easeCubicOut);
         xAxisG.transition(t).call(d3.axisBottom(x));
         occPath.transition(t).attr("d", occLine);
         bl19.transition(t).attr("d", blLine("occ2019")).attr("opacity", showBl ? 1 : 0);
         bl22.transition(t).attr("d", blLine("occ2022")).attr("opacity", showBl ? 1 : 0);
+        const labelM = parseM("2023-06");
+        blLabel19.transition(t)
+                    .attr("opacity", showBl ? 1 : 0)
+                    .attr("x", x(labelM) + 4)
+                    .attr("y", y(hotel.baseline[2].occ2019)+6);
+        blLabel22.transition(t)
+                    .attr("opacity", showBl ? 1 : 0)
+                    .attr("x", x(labelM) + 4)
+                    .attr("y", y(hotel.baseline[2].occ2022) +20);
+
 
         const evs = hotel.events.filter(e => eventDates.includes(e.date));
         eventG.selectAll("g.event")
@@ -117,8 +140,56 @@ Promise.all([
         eventG.selectAll("g.event text").attr("y", (e, i)=> MARGIN.top+12+i*14);
     }
 
+    // Annotations
+    const SCENE_ANNOS = {
+        1: [{
+                m: "2023-04", v: 67.2, dx: 40, dy: 60,
+                title: "A normal season",
+                label: "Through July 2023, West Maui occupancy tracked its 2019 and 2022 seasonal patterns."
+            }],
+        2: [{
+                m: "2023-08", v: 45.4, dx: -35, dy: 20,
+                title: "45.4% Occupancy",
+                label: "The worst month on record — tourism shut down after the fire."
+            },
+            {
+                m: "2023-11", v: 73.3, dx: 5, dy: 55,
+                title: "A strange rebound",
+                label: "Above 2022 and 2019 — rooms filled by displaced residents, relief workers and returning visitors."
+            }],
+        3: [{
+                m: "2024-02", v: 76.3, dx: -30, dy: -45,
+                title: "76.3% plateau",
+                label: "Occupancy held high while the sheltering program ran." },
+            {
+                m: "2024-09", v: 49.8, dx: 35, dy: 60,
+                title: "49.8% trough",
+                label: "Three months after the program ended, occupancy hit its post-fire low."
+            }],
+    };
+
+    const annoG = hotelLayer.append("g");
+    function drawAnnos(scene) {
+        annoG.selectAll("*").remove();
+        const list = SCENE_ANNOS[scene] || [];
+        if (!list.length) return;
+        const maker = d3.annotation()
+            .type(d3.annotationCalloutCircle)
+            .annotations(list.map(a => ({
+                x: x(parseMid(a.m)), y: y(a.v),
+                dx: a.dx, dy: a.dy,
+                note: { title: a.title, label: a.label, wrap: 190 },
+                subject: { radius: 5 },
+            })));
+        // fade in after the reframe transition has mostly settled
+        annoG.attr("opacity", 0).call(maker)
+            .transition().delay(500).duration(300).attr("opacity", 1);
+    }
+
+
     // --- Scene 4 - The divergence (two panels, one time axis) ---
     // Diff units (% vs listing count) -< stacked panels
+    let drawS4Annos;
     const s4 = chartSvg.append("g").style("display", "none");
     {
         // first month with a clean post-fire ltm window
@@ -154,7 +225,7 @@ Promise.all([
             .attr("stroke", "#7f8c8d")
             .attr("stroke-width", 2)
             .attr("d", d3.line()
-                .x(d => x4(parseM(d.m)))
+                .x(d => x4(parseMid(d.m)))
                 .y(d => yTop(d.occ))
             );
         s4.append("path")
@@ -163,7 +234,7 @@ Promise.all([
             .attr("stroke", "#999")
             .attr("stroke-dasharray", "5 4")
             .attr("d", d3.line()
-                .x(d => x4(parseM(d.m)))
+                .x(d => x4(parseMid(d.m)))
                 .y(d => yTop(hotel.baseline[+d.m.slice(5) - 1 ].occ2019))
             );
 
@@ -195,6 +266,30 @@ Promise.all([
             .attr("fill", "#c0392b")
             .attr("font-weight", 600)
             .text(aCounts[aCounts.length -1]);
+
+        const s4annoG = s4.append("g");
+        drawS4Annos = () => {
+            s4annoG.selectAll("*").remove();
+            s4annoG.call(d3.annotation()
+                .type(d3.annotationCalloutCircle)
+                .annotations([
+                    {
+                        x: x4(parseM("2024-08")),
+                        y: yBot(5), dx: 40, dy: -40,
+                        note: {
+                            title: "5 listings",
+                            label: "Active within 1 km of the burn zone, Aug 2024.",
+                            wrap: 160 },
+                        subject: { radius: 5 } },
+                    {
+                        x: x4(parseM("2026-02")),
+                        y: yTop(76.3), dx: -50, dy: -30,
+                        note: { label: "Only the 2026 peak season touched the 2019 norm.",
+                        wrap: 160 },
+                        subject: { radius: 5 } },
+                ]));
+        };
+
     }
 
     // --- Scene 5 - Exploration map
@@ -225,6 +320,25 @@ Promise.all([
                         .domain(d3.range(mp.bands.length))
                         .range(["#7b241c", "#c0392b", "#e67e22",
                             "#b7950b", "#7f8c8d", "#bdc3c7"]);
+
+    // Map Legend: one swatch per distance band adn the burn area
+    const legend = d3.select("#map-legend");
+    mp.bands.forEach((b, i)=>{
+        const item = legend.append("span").attr("class", "legend-item");
+        item.append("span")
+                .attr("class", "legend-swatch")
+                .style("background", bandColor(i));
+        item.append("span").text(b);
+    });
+
+    const burnItem = legend.append("span").attr("class", "legend-item");
+    burnItem.append("span")
+                .attr("class", "legend-swatch")
+                .style("background", "rgba(192,57,43,0.25)")
+                .style("border", "1px solid #c0392b")
+                .style("border-radius", "2px");
+    burnItem.append("span").text("burned area (2023 fire)");
+
     // Tooltip for map interactions
     const tip = d3.select("#tooltip");
     const dots = mapG.append("g").selectAll("circle")
@@ -282,7 +396,7 @@ Promise.all([
         }
          // Region-tier labels (cartographic convention: caps + letterspacing)
         const REGIONS = [
-            { name: "MAUI",          lon: -156.590, lat: 20.885 },
+            { name: "WEST MAUI",          lon: -156.590, lat: 20.885 },
         ];
         mapG.append("g").selectAll("text")
             .data(REGIONS)
@@ -298,12 +412,12 @@ Promise.all([
 
     // --- Scene renderers ---
     const RENDERERS = {
-        1: () => frameChart("2023-01", "2023-07", []),
-        2: () => frameChart("2023-01", "2024-02",
-               ["2023-08-08", "2023-10-08"]),
-        3: () => frameChart("2023-01", "2026-05",
-               ["2024-05-13", "2024-06-10"], false),
-        4: () => {},
+        1: () => {frameChart("2023-01", "2023-07", []); drawAnnos(1); },
+        2: () => {frameChart("2023-01", "2024-02",
+               ["2023-08-08", "2023-10-08"]); drawAnnos(2); },
+        3: () => { frameChart("2023-01", "2026-05",
+               ["2024-05-13", "2024-06-10"], false); drawAnnos(3);},
+        4: () => drawS4Annos(),
         5: updateMap,
     };
 
