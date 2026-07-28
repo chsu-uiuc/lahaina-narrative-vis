@@ -8,7 +8,7 @@ body {
 }
 header h1 { 
     font-size: 4em;
-    font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+    font-weight: 700;
     line-height: 1.00;
     margin-bottom: 10px;
     max-width: 700px;
@@ -32,6 +32,11 @@ header h1 {
     font-size: 18px;
     line-height: 1.65;
     max-width: 660px;
+}
+.lede b {
+    font-weight: 700;
+    font-size: 3em;
+    line-height: 1.0;
 }
 #scene-text {
     min-height: 8.7em;
