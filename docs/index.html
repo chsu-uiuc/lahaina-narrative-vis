@@ -2,18 +2,56 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title> Lahaina Narrative Vis</title>
+        <title>Lahaina Narrative Vis</title>
         <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+        <style>
+            body { font-family: 'arial', sans-serif; margin: 2rem;}
+            svg { background: #fafafa; }
+            #tooltip {
+                position: absolute;
+                display:none;
+                background:#fff;
+                border: 1px solid #ccc;
+                padding:4px 8px;
+                font-size: 12px;
+                pointer-events: none;
+            }
+        </style>
     </head>
-    <style>
-        body { font-family: 'arial', sans-serif; margin: 2rem;}
-        svg { background: #fafafa; }
-    </style>
+
     <body>
-        <h1>Draft: active Airbnb listings</h1>
+        <header>
+            <h1>Recovered, but Not the Same Market</h1>
+            <p class="subtitle">
+                Hotel occupancy and short-term rentals in West Maui
+                after the 2023 Lahaina fire
+            </p>
+        </header>
+
+        <nav id="scene-nav">
+            <button id="prev">&larr; Back</button>
+            <span id="scene-label"></span>
+            <button id="next">Next &rarr;</button>
+        </nav>
+
+        <p id="scene-text"></p>
+
         <svg id="chart" width="900" height="500"></svg>
-        <svg id="map" width="900" height="600"></svg>
-        <svg id="hotel" width="900" height="420"></svg>
+        <svg id="map" width="900" height="600" style="display:none"></svg>
+        <div id="map-ui" style="display:none">
+            <input id="month-slider" type="range" min="0" max="23" value="23" style="width:300px">
+            <span id="month-label"></span>
+        </div>
+        <div id="tooltip"></div>
+
+        <footer>
+            <p>
+                Data: <a href="https://insideairbnb.com/get-the-data/">Inside Airbnb</a> (CC BY 4.0)
+                &middot; <a href="https://www.hawaiitourismauthority.org/research/infrastructure-research/">Hawai&#699;i
+                Tourism Authority / DBEDT</a> hotel performance reports
+                &middot; <a href="https://geoportal.hawaii.gov/">Hawai&#699;i Statewide GIS</a> (fire perimeter)
+            </p>
+        </footer>
     <script src="app.js"></script>
     </body>
 </html>
