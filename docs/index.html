@@ -5,46 +5,18 @@
         <title>Lahaina Narrative Vis</title>
         <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
-        <style>
-            body { font-family: 'arial', sans-serif; margin: 2rem;}
-            svg { background: #fafafa; }
-            #tooltip {
-                position: absolute;
-                display:none;
-                background:#fff;
-                border: 1px solid #ccc;
-                padding:4px 8px;
-                font-size: 12px;
-                pointer-events: none;
-            }
-            .annotation path { stroke: #555; fill: none; }
-            .annotation text { fill: #333; }
-            .annotation-note-title { font-weight: 700; }
-            #map-legend {
-                margin:6px 0;
-                font-size: 12px;
-            }
-            .legend-item {
-                margin-right: 14px;
-                white-space: nowrap;
-            }
-            .legend-swatch {
-                display: inline-block;
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                margin-right: 4px;
-                vertical-align: middle;
-            }
-        </style>
+        <link rel="stylesheet" href="style.css">
     </head>
 
     <body>
         <header>
-            <h1>Recovered, but Not the Same Market</h1>
-            <p class="subtitle">
-                Hotel occupancy and short-term rentals in West Maui
-                after the 2023 Lahaina fire
+            <h1>After the Lahaina Fire, a Different Market Grew Back</h1>
+            <p class="dek">
+               West Maui's hotels never quite came back. Something else did.
+            </p>
+            <p class="byline">C.H. - July 2026</p>
+            <p class="lede">
+                On August 8, 2023, a wildfire destroyed most of Lahaina, killing 102 people &mdash; the deadliest American wildfire in over a century. Tourism shut down overnight. Yet by that November, West Maui's hotels were fuller than they had been before the fire. The rooms weren't full of tourists. Three years of hotel reports and Airbnb data tell the story of a market that recovered &mdash; into something different.
             </p>
         </header>
 
@@ -57,13 +29,29 @@
         <p id="scene-text"></p>
 
         <svg id="chart" width="900" height="500"></svg>
-        <svg id="map" width="900" height="600" style="display:none"></svg>
         <div id="map-ui" style="display:none">
             <div id="map-legend"></div>
             <button id="play">&#9654; Play</button>
             <input id="month-slider" type="range" min="0" max="23" value="23" style="width:300px">
+            <p id="ltm-warn">
+                Note: this month's activity window still includes pre-fire reviews.
+            </p>
             <span id="month-label"></span>
         </div>
+        <svg id="map" width="900" height="440" style="display:none"></svg>
+
+        <div id="outro" style="display:none">
+            <p>
+                The market recovered &mdash; but not as the same market. Hotels remain below their 2019 norm, while the fastest-growing corner of West Maui lodging now sits within walking distance of the burn zone.
+            </p>
+            <p>
+                What the listings data cannot say is who owns the new rentals — rebuilt family homes earning income, or investors moving in on the edge of a disaster. Either way, the map of who houses West Maui's visitors has been redrawn.
+            </p>
+            <p class="methods">
+                Methods: a listing counts as active if it was reviewed in the trailing 12 months; distances are measured from first-seen coordinates to the actual burned-area perimeter. Sources below.
+            </p>
+        </div>
+
         <div id="tooltip"></div>
 
         <footer>

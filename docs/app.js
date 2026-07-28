@@ -48,8 +48,8 @@ const SCENE_TEXT = {
     "out; the program ended on June 10, 2024, and three months later occupancy hit 49.8%, " +
     "its lowest point since the fire itself. But hotels are only half the story.",
 
-    4: "Since August 2024, hotel occupancy has stayed below its 2019 norm in nearly " +
-    "every month. Over the same two years, active Airbnb listings within 1 km of the burn zone " +
+    4: "Since August 2024, hotel occupancy has stayed below its 2019 norm in all 22 " +
+    "months. Over the same two years, active Airbnb listings within 1 km of the burn zone " +
     "grew from 5 to 123 \u2014 a twenty-five-fold increase. The market recovered \u2014 " +
     "just not as the same market.",
 
@@ -108,7 +108,14 @@ Promise.all([
                     .attr("transform", `translate(0,${CHART_HEIGHT - MARGIN.bottom})`);
     hotelLayer.append("g")
         .attr("transform", `translate(${MARGIN.left},0)`)
-        .call(d3.axisLeft(y).tickFormat(d=> d+"%"));
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d =>d + "%")
+            .tickSize(-(CHART_WIDTH-MARGIN.left-MARGIN.right)))
+        .call(g=>g.select(".domain").remove())
+        .call(g=>g.selectAll(".tick line")
+            .attr("stroke", "#e8e8e8"))
+        .call(g=>g.selectAll(".tick text")
+            .attr("fill", "#666")
+            .attr("font-size", 12));
 
     const plot = hotelLayer.append("g")
                     .attr("clip-path", "url(#plot-clip)");
@@ -345,7 +352,7 @@ Promise.all([
                     {
                         x: x4(parseMid("2026-02")),
                         y: yTop(76.3), dx: -50, dy: 40,
-                        note: { label: "Only the 2026 peak season touched the 2019 norm.",
+                        note: { label: "Only the 2026 peak season came within 3 points of the 2019 norm.",
                         wrap: 200 },
                         subject: { radius: 5 } },
                 ]));
@@ -407,7 +414,7 @@ Promise.all([
                         .join("circle")
                         .attr("cx", p=> proj([p[0], p[1]])[0])
                         .attr("cy", p=> proj([p[0], p[1]])[1])
-                        .attr("r",3)
+                        .attr("r",2)
                         .attr("fill", p=> bandColor(p[2]))
                         .attr("fill-opacity", 0.6)
                         .on("pointerover", (ev, p)=> {
@@ -436,7 +443,8 @@ Promise.all([
     function updateMap() {
         const warn = state.monthIdx < CLEAN0
                             ? " (review window still includes pre-fire months)" : "";
-        d3.select("#month-label").text("  " + mp.months[state.monthIdx] + warn);
+        d3.select("#month-label").text(mp.months[state.monthIdx]);
+        d3.select("#ltm-warn").style("visibility", state.monthIdx < CLEAN0 ? "visible" : "hidden");
         dots.attr("display", p=> p[3][state.monthIdx] === "1" ? null : "none");
         }
         // Region-tier labels (cartographic convention: caps + letterspacing)
@@ -458,7 +466,7 @@ Promise.all([
             .attr("x", d => proj([d.lon, d.lat])[0])
             .attr("y", d => proj([d.lon, d.lat])[1])
             .attr("text-anchor", "middle")
-            .attr("font-size", 38)
+            .attr("font-size", 30)
             .attr("letter-spacing", "0.25em")
             .attr("fill", "#bbb")
             .text(d => d.name);
@@ -484,7 +492,11 @@ Promise.all([
     };
 
     function render() {
-        d3.select("#scene-label").text(`Scene ${state.scene} / ${NSCENES}`);
+        d3.select("#scene-label").html(
+            d3.range(1, NSCENES+1).map(i=>
+                `<span style="color:${i === state.scene ? '#c0392b': '#ccc'}">\u25cf</span>`
+            ).join(" ")
+        );
         d3.select("#scene-text").text(SCENE_TEXT[state.scene]);
         // Disables navigation buttons based on scene
         d3.select("#prev").attr("disabled", state.scene === 1 ? true : null);
@@ -495,6 +507,7 @@ Promise.all([
         hotelLayer.style("display", state.scene <= 3 ? null : "none");
         s4.style("display", state.scene === 4 ? null : "none");
         d3.select("#map-ui").style("display", state.scene === 5 ? null : "none");
+        d3.select("#outro").style("display", state.scene === 5 ? null : "none");
         RENDERERS[state.scene]();
     }
 
@@ -518,6 +531,7 @@ Promise.all([
             playTimer.stop();
             playTimer = null;
         }
+        d3.select("#play").html("&#9658; Play");
     }
 
     d3.select("#play").on("click", ()=> {
@@ -542,6 +556,15 @@ Promise.all([
         }, 500);
 
     });
+    function goToScene(delta) {
+        stopPlay();
+        state.scene = Math.max(1, Math.min(NSCENES, state.scene + delta));
+        render();
+        d3.select("#scene-nav").node()
+            .scrollIntoView({behavior: "smooth", block: "start"});
+    }
+    d3.select("#next").on("click", ()=> goToScene(1));
+    d3.select("#prev").on("click", ()=> goToScene(-1));
     // --- Initial render ---
     render();
 });

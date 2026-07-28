@@ -1,0 +1,172 @@
+
+body { 
+    font-family: Georgia, "Times New Roman", serif;
+    max-width: 940px;
+    margin: 3rem auto;
+    padding: 0 20px;
+    color: #222;
+}
+header h1 { 
+    font-size: 4em;
+    font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+    line-height: 1.00;
+    margin-bottom: 10px;
+    max-width: 700px;
+}
+.dek {
+    font-size: 20px;
+    color: #555;
+    line-height: 1.4;
+    margin: 0 0 6px;
+    max-width: 700px;
+}
+.byline {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 14px 0 26px;
+}
+.lede, #scene-text, #outro p {
+    font-size: 18px;
+    line-height: 1.65;
+    max-width: 660px;
+}
+#scene-text {
+    min-height: 8.7em;
+}
+#outro .methods {
+    font-size: 13px;
+    color: #777;
+    font-family: Arial, sans-serif;
+}
+#scene-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-family: Arial, sans-serif;
+    margin: 34px 0 10px;
+    scroll-margin-top: 8px;
+}
+#scene-nav button { 
+    border: 1px solid #ddd;
+    background: #353535;
+    border-radius: 999px;
+    border-width: 2px;
+    padding: 8px 18px;
+    font-size: 14px;
+    color: #fff;
+    transition: border-color 0.15s, color 0.15s;
+    cursor: pointer;
+}
+#scene-nav button:hover:not(:disabled) {
+    border-color: #4b4545;
+    border-width: 2px;
+    color: #fff;
+}
+#scene-nav button:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+#scene-label {
+    margin: 0 10px;
+    color: #888;
+    font-size: 14px;
+}
+svg { 
+    background: #fff; 
+    max-width: 100%;
+    margin-top: 6px;
+}
+svg text {
+    font-family: Arial, sans-serif;
+}
+#tooltip {
+    position: absolute;
+    display:none;
+    background:#fff;
+    border: 1px solid #ccc;
+    padding:4px 8px;
+    font-size: 12px;
+    font-family: Arial, sans-serif
+    pointer-events: none;
+}
+.annotation path { stroke: #555; fill: none; }
+.annotation text { fill: #333; }
+.annotation-note-title { font-weight: 700; }
+#map-ui {
+    max-width: 900px;
+    margin: 22px auto 12px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+#map-legend {
+    margin-bottom: 12px;
+    font-family: Arial, sans-serif;
+}
+#map-legend {
+    margin: 6px 0;
+    font-size: 12px;
+}
+.legend-item {
+    margin-right: 14px;
+    white-space: nowrap;
+}
+#month-slider {
+    width: 420px;
+    vertical-align: middle;
+    margin: 0 12px;
+}
+#play {
+    width: 80px;
+    height: 30px;
+    vertical-align: middle;
+}
+#month-label {
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    min-width: 90px;
+    text-align: left;
+    margin-top: 8px;
+}
+.legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+#ltm-warn {
+    font-size: 12px;
+    color: #b26a00;
+    margin: 6px 0 0;
+    visibility: hidden;
+}
+footer { 
+    font-family: Arial, sans-serif;
+    color: #888;
+    font-size: 12px;
+    margin-top: 28px;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+footer a {
+    color:#666;
+}
+header, .lede, #scene-text, #outro, #scene-nav, footer {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+}
+header h1, .dek, .byline {
+    text-align: center;
+}
+svg { 
+    display: block;
+    margin: 6px auto 0;
+    background: #f7f7f7
+}
