@@ -5,6 +5,8 @@ const WIDTH = +svg.attr("width"), HEIGHT = +svg.attr("height");
 const MARGIN = { top: 30, right: 150, bottom: 40, left: 60 };   // right: legend space
 
 d3.json("data/airbnb.json").then(data => {
+    // West Maui total = the six distance bands summed month by month
+    const westMauiTotal = data.months.map((_, i) => d3.sum(Object.values(data.bands), s=>s[i]));
     // 2024-08: Date object (UTC to avoid timezone off-by-one)
     const parse = d3.utcParse("%Y-%m");
     const dates = data.months.map(parse);
@@ -14,7 +16,7 @@ d3.json("data/airbnb.json").then(data => {
                 .range([ MARGIN.left, WIDTH - MARGIN.right]);
 
     const y = d3.scaleLinear()
-                .domain([0, d3.max(data.lahaina_total)]).nice()
+                .domain([0, d3.max(westMauiTotal)]).nice()
                 .range([HEIGHT - MARGIN.bottom,MARGIN.top]);
 
     svg.append("g")
@@ -30,7 +32,7 @@ d3.json("data/airbnb.json").then(data => {
         .y(d => y(d));
 
     svg.append("path")
-        .datum(data.lahaina_total)
+        .datum(westMauiTotal)
         .attr("fill", "none")
         .attr("stroke", "#c0392b")
         .attr("stroke-width", 2.5)
@@ -64,12 +66,12 @@ d3.json("data/airbnb.json").then(data => {
             .attr("fill", color(name)).attr("font-size", 14)
             .text(name);
     }
-    svg.append("path").datum(data.lahaina_total)
+    svg.append("path").datum(westMauiTotal)
         .attr("fill", "none").attr("stroke", "#c0392b")
         .attr("stroke-width", 2.5).attr("d", line);
     svg.append("text")
         .attr("x", WIDTH - MARGIN.right + 6)
-        .attr("y", y(data.lahaina_total[data.lahaina_total.length - 1]))
+        .attr("y", y(westMauiTotal[westMauiTotal.length - 1]))
         .attr("fill", "#c0392b").attr("font-size", 12).attr("font-weight", 600)
         .text("West Maui (Lahaina)");
 });
