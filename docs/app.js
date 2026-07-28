@@ -6,7 +6,7 @@ const NSCENES = 5;
 // Annotations
 const SCENE_ANNOS = {
     1: [{
-            m: "2023-04", v: 67.2, dx: 40, dy: 60,
+            m: "2023-03", v: 74, dx: 50, dy: 80,
             title: "A normal season",
             label: "Through July 2023, West Maui occupancy tracked its 2019 and 2022 seasonal patterns."
         }],
@@ -62,10 +62,10 @@ const SCENE_TEXT = {
 
 // Short labels for the viertical event lines
 const EVENT_SHORT = {
-    "2023-08-08": "Lahaina wildfire",
-    "2023-10-08": "Tourism reopening begins",
-    "2024-05-13": "85% moved out of hotels",
-    "2024-06-10": "Sheltering program ends",
+    "2023-08-08": "Lahaina wildfire \u24D8",
+    "2023-10-08": "Tourism reopening begins \u24D8",
+    "2024-05-13": "85% moved out of hotels \u24D8",
+    "2024-06-10": "Sheltering program ends \u24D8",
 }
 
 Promise.all([
@@ -122,27 +122,33 @@ Promise.all([
 
     // seasonal baselines: calendar-month values mapped onto 2023 dates
     const blLine = key => d3.line()
-        .x(b => x(parseMid(`2023-${String(b.month).padStart(2, "0")}`)))
-        .y(b=> y(b[key]));
+        .x((d,i) => x(hDates[i]))
+        .y(d=> y(hotel.baseline[+d.m.slice(5,7)-1][key]));
     // 2019 and 2022 baseline lines
     const bl19 = plot.append("path")
-                    .datum(hotel.baseline)
+                    .datum(hotel.series)
                     .attr("fill", "none")
-                    .attr("stroke", "#999")
+                    .attr("stroke", "#aaa")
                     .attr("stroke-dasharray", "5 4");
     const bl22 = plot.append("path")
-                    .datum(hotel.baseline)
+                    .datum(hotel.series)
                     .attr("fill", "none")
-                    .attr("stroke", "#bbb")
+                    .attr("stroke", "#ccc")
                     .attr("stroke-dasharray", "2 3");
     // 2019 and 2022 text
     const blLabel19 = plot.append("text")
                         .attr("font-size", 11)
-                        .attr("fill", "#999")
+                        .attr("fill", "#aaa")
+                        .attr("stroke", "#f7f7f7")
+                        .attr("stroke-width", 4)
+                        .attr("paint-order", "stroke")
                         .text("2019 Baseline");
     const blLabel22 = plot.append("text")
                         .attr("font-size", 11)
-                        .attr("fill", "#bbb")
+                        .attr("fill", "#ccc")
+                        .attr("stroke", "#f7f7f7")
+                        .attr("stroke-width", 4)
+                        .attr("paint-order", "stroke")
                         .text("2022 Baseline");
     // hotel occupancy line
     const occLine = d3.line()
@@ -287,15 +293,15 @@ Promise.all([
         s4.append("g")
             .attr("transform", "translate(0,220)")
             .call(d3.axisBottom(x4));
-        s4.append("path")
-            .datum(hSer)
-            .attr("fill", "none")
-            .attr("stroke", "#7f8c8d")
-            .attr("stroke-width", 2)
-            .attr("d", d3.line()
-                .x(d => x4(parseMid(d.m)))
-                .y(d => yTop(d.occ))
-            );
+        const hotelPath4 = s4.append("path")
+                            .datum(hSer)
+                            .attr("fill", "none")
+                            .attr("stroke", "#7f8c8d")
+                            .attr("stroke-width", 2)
+                            .attr("d", d3.line()
+                                .x(d => x4(parseMid(d.m)))
+                                .y(d => yTop(d.occ))
+                            );
         s4.append("path")
             .datum(hSer)
             .attr("fill", "none")
@@ -319,7 +325,7 @@ Promise.all([
         s4.append("g")
             .attr("transform", `translate(0,460)`)
             .call(d3.axisBottom(x4));
-        s4.append("path")
+        const airbnbPath4 = s4.append("path")
             .datum(aCounts)
             .attr("fill", "none")
             .attr("stroke", "#c0392b")
@@ -328,7 +334,7 @@ Promise.all([
                 .x((d, i) => x4(aDates[i]))
                 .y(d => yBot(d))
             );
-        s4.append("text")
+        const label123 = s4.append("text")
             .attr("x", x4(aDates[aDates.length - 1]) - 8)
             .attr("y", yBot(aCounts[aCounts.length - 1]) - 8)
             .attr("fill", "#c0392b")
@@ -337,7 +343,35 @@ Promise.all([
 
         const s4annoG = s4.append("g");
         drawS4Annos = () => {
+            // Hotel line animation: color handoff
+            hotelPath4
+                .attr("stroke", "#c0392b")
+                .attr("stroke-width", 2.5)
+                .transition()
+                .delay(2400)
+                .duration(3200)
+                .ease(d3.easeCubicOut)
+                .attr("stroke", "#7f8c8d")
+                .attr("stroke-width", 2);
             s4annoG.selectAll("*").remove();
+
+            // Airbnb line animation: animate the line drawing
+            const totalLength = airbnbPath4.node().getTotalLength();
+            airbnbPath4
+                .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
+                .attr("stroke-dashoffset", totalLength)
+                .transition()
+                .delay(300)
+                .duration(3600)
+                .ease(d3.easeCubicInOut)
+                .attr("stroke-dashoffset", 0)
+                .on("end", ()=> airbnbPath4.attr("stroke-dasharry", null));
+            label123.attr("opacity", 0)
+                .transition()
+                .delay(3200)
+                .duration(300)
+                .attr("opacity", 1);
+
             s4annoG.call(d3.annotation()
                 .type(d3.annotationCalloutCircle)
                 .annotations([
@@ -476,7 +510,8 @@ Promise.all([
             .scaleExtent([1, 8])
             .on("zoom", (event) => {
                 mapG.attr("transform", event.transform);
-            })
+                mapSvg.style("cursor", event.transform.k > 1 ? "grab" : "zoom-in")
+        })
         )
 
 
@@ -486,10 +521,59 @@ Promise.all([
         2: () => {frameChart("2023-01", "2024-02",
                ["2023-08-08", "2023-10-08"]); drawAnnos(2); },
         3: () => { frameChart("2023-01", "2026-05",
-               ["2024-05-13", "2024-06-10"], false); drawAnnos(3);},
-        4: () => drawS4Annos(),
+               ["2024-05-13", "2024-06-10"]); drawAnnos(3);},
+        4: () => {
+            s4.attr("opacity", 0)
+                .transition()
+                .duration(1000)
+                .ease(d3.easeCubicOut)
+                .attr("opacity", 1);
+            drawS4Annos();
+        },
         5: updateMap,
     };
+
+    // Hover readout for Scenes1-3
+    const focusDot = plot.append("circle")
+                        .attr("r", 6)
+                        .attr("fill", "#c0392b")
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5)
+                        .style("display", "none");
+    const fmtM = d3.timeFormat("%b %Y");
+    const bisectDate = d3.bisector(d=>d).center;
+
+    plot.append("rect")
+            .attr("x", MARGIN.left)
+            .attr("y", MARGIN.top)
+            .attr("width", CHART_WIDTH - MARGIN.left - MARGIN.right)
+            .attr("height", CHART_HEIGHT - MARGIN.top - MARGIN.bottom)
+            .attr("fill", "transparent")
+            .on("pointermove", (ev) => {
+                const [mx] = d3.pointer(ev);
+                const i = bisectDate(hDates, x.invert(mx));
+                const d = hotel.series[i];
+                focusDot.style("display", null)
+                    .attr("cx", x(hDates[i]))
+                    .attr("cy",y(d.occ));
+                // Update the tooltip with the current date and occupancy
+                d3.select("#tooltip").style("display", "block")
+                    .style("left", (ev.pageX + 12) +"px")
+                    .style("top", (ev.pageY - 10) + "px")
+                    .html(`<b>${fmtM(hDates[i])}</b><br>Occupancy: ${d.occ}%`);
+            })
+            .on("pointerout", () => {
+                focusDot.style("display", "block")
+                        .style("left", (ev.pageX + 12) + "px")
+                        .style("top", (ev.pageY - 10) + "px")
+                        .html(`<b>${fmtM(hDates[i])}</b><br>Occupancy: ${d.occ}%`);
+            })
+            .on("pointerout", () => {
+                focusDot.style("display", "none");
+                d3.select("#tooltip").style("display", "none");
+            });
+    eventG.raise();
+
 
     function render() {
         d3.select("#scene-label").html(

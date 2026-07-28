@@ -8,7 +8,7 @@ body {
 }
 header h1 { 
     font-size: 4em;
-    font-weight: 700;
+    font-weight: bolder;
     line-height: 1.00;
     margin-bottom: 10px;
     max-width: 700px;
@@ -101,6 +101,9 @@ svg text {
 .annotation path { stroke: #555; fill: none; }
 .annotation text { fill: #333; }
 .annotation-note-title { font-weight: 700; }
+#map {
+    cursor: zoom-in;
+}
 #map-ui {
     max-width: 900px;
     margin: 22px auto 12px;
@@ -123,6 +126,7 @@ svg text {
     width: 420px;
     vertical-align: middle;
     margin: 0 12px;
+    accent-color: #322f2f;
 }
 #play {
     width: 80px;
@@ -158,6 +162,7 @@ footer {
     margin-top: 28px;
     border-top: 1px solid #eee;
     padding-top: 12px;
+    margin-bottom: 50px;
 }
 footer a {
     color:#666;
@@ -166,6 +171,12 @@ header, .lede, #scene-text, #outro, #scene-nav, footer {
     max-width: 680px;
     margin-left: auto;
     margin-right: auto;
+}
+.annotation-note-title {
+    font-size: 14px;
+}
+.annotation-note-label{
+    font-size:12px;
 }
 header h1, .dek, .byline {
     text-align: center;
