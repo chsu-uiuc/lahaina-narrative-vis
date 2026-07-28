@@ -3,12 +3,69 @@
 const state = { scene:1, monthIdx: 23, band: null};
 const NSCENES = 5;
 
+// Annotations
+const SCENE_ANNOS = {
+    1: [{
+            m: "2023-04", v: 67.2, dx: 40, dy: 60,
+            title: "A normal season",
+            label: "Through July 2023, West Maui occupancy tracked its 2019 and 2022 seasonal patterns."
+        }],
+    2: [{
+            m: "2023-08", v: 45.4, dx: -35, dy: 20,
+            title: "45.4% occupancy",
+            label: "August 2023 was the worst month on record: tourism shut down after the fire."
+        },
+        {
+            m: "2023-11", v: 73.3, dx: 5, dy: 55,
+            title: "A strange rebound",
+            label: "By November 2023, occupancy was back above both 2022 and 2019 \u2014 rooms filled by displaced residents, relief workers and returning visitors."
+        }],
+    3: [{
+            m: "2024-02", v: 76.3, dx: -20, dy: 155,
+            title: "76.3% plateau",
+            label: "Occupancy held high into February 2024, while the sheltering program ran." },
+        {
+            m: "2024-09", v: 49.8, dx: 65, dy: 60,
+            title: "49.8% trough",
+            label: "September 2024, three months after the program ended: the post-fire low."
+    }],
+};
+
+// Scene text
 const SCENE_TEXT = {
-    1: "placeholder: pre-fire West Maui, a stable resort market",
-    2: "placeholder: the fire, the crash, and a strange rebound",
-    3: "placeholder: the sheltering plateau, the exit, the trough",
-    4: "placeholder: hotels stuck below baseline while short-term rentals near the burn zone multiply",
-    5: "placeholder: explore every listing month by month",
+    1: "West Maui runs on tourism: the Lahaina\u2013K\u0101\u2018anapali\u2013Kapalua strip is one "+
+    "of Hawai\u2018i's densest resort corridors. Through July 2023, its hotels were having " +
+    "an ordinary year, tracking the same seasonal rhythm as 2019 and 2022.",
+
+    2: "On August 8, the fire destroyed most of Lahaina town. Occupancy fell to 45.4% \u2014 " +
+    "the worst month on record \u2014 and West Maui closed to visitors. Then something odd: " +
+    "by November occupancy was back above both baselines, though tourism had barely begun " +
+    "its phased reopening. HTA's own reports explain who was in the rooms: a mix of "+
+    "displaced residents, relief workers, and visitors.",
+
+    3: "A FEMA and State sheltering program was paying for those rooms \u2014 3,071 households " +
+    "at its peak. Occupancy held near 76% through the winter, then slid as families moved " +
+    "out; the program ended on June 10, 2024, and three months later occupancy hit 49.8%, " +
+    "its lowest point since the fire itself. But hotels are only half the story.",
+
+    4: "Since August 2024, hotel occupancy has stayed below its 2019 norm in nearly " +
+    "every month. Over the same two years, active Airbnb listings within 1 km of the burn zone " +
+    "grew from 5 to 123 \u2014 a twenty-five-fold increase. The market recovered \u2014 " +
+    "just not as the same market.",
+
+    5: "Now explore it yourself. Each dot is one listing, colored by its distance " +
+    "to the burned area; drag the slider to move through time, zoom and hover for details. " +
+    "Months before August 2024 still carry pre-fire activity in their review window \u2014 "+
+    "read them with care.",
+};
+
+
+// Short labels for the viertical event lines
+const EVENT_SHORT = {
+    "2023-08-08": "Lahaina wildfire",
+    "2023-10-08": "Tourism reopening begins",
+    "2024-05-13": "85% moved out of hotels",
+    "2024-06-10": "Sheltering program ends",
 }
 
 Promise.all([
@@ -92,6 +149,8 @@ Promise.all([
 
     const eventG = plot.append("g");
 
+    // --- Scene 1-3 framing function ---
+
     // Reframe the chart: slide the x domain and swap event lines.
     function frameChart(m0, m1, eventDates, showBl=true, dur=950) {
         x.domain([parseMid(m0), parseMid(m1)]);
@@ -112,6 +171,9 @@ Promise.all([
 
 
         const evs = hotel.events.filter(e => eventDates.includes(e.date));
+        const EVENT_LEFT = new Set(["2024-05-13"]);
+        // format dates for the tooltip
+        const fmtD = d3.utcFormat("%B %-d, %Y");
         eventG.selectAll("g.event")
             .data(evs, e=> e.date)
             .join(
@@ -123,11 +185,28 @@ Promise.all([
                         .attr("stroke", "#555")
                         .attr("stroke-dasharray", "4 3");
                     g.append("text")
-                        .attr("x", 5)
+                        .attr("x", e => EVENT_LEFT.has(e.date) ? -5 : 5)
+                        .attr("text-anchor", e=> EVENT_LEFT.has(e.date) ? "end" : "start")
                         .attr("y", MARGIN.top + 12)
                         .attr("fill", "#555")
                         .attr("font-size", 11)
-                        .text(e => e.label);
+                        .text(e => EVENT_SHORT[e.date] || e.label);
+                    g.style("cursor", "help")
+                        .on("pointerover", (ev, e) => {
+                            d3.select("#tooltip")
+                                .style("display", "block")
+                                .style("left", (ev.pageX+12) + "px")
+                                .style("top", (ev.pageY-10) + "px")
+                                .html(`<b>${fmtD(parseD(e.date))}</b> \u2014 ${e.label}<br>
+                                    <span style="color:#888; margin-top:16px;">
+                                    Source: ${e.src}</span>`
+                                );
+                        })
+                        .on("pointerout", () => {
+                            d3.select("#tooltip")
+                                .style("display", "none");
+                        });
+
                     return g;
                 },
                 update => update,
@@ -140,34 +219,6 @@ Promise.all([
         eventG.selectAll("g.event text").attr("y", (e, i)=> MARGIN.top+12+i*14);
     }
 
-    // Annotations
-    const SCENE_ANNOS = {
-        1: [{
-                m: "2023-04", v: 67.2, dx: 40, dy: 60,
-                title: "A normal season",
-                label: "Through July 2023, West Maui occupancy tracked its 2019 and 2022 seasonal patterns."
-            }],
-        2: [{
-                m: "2023-08", v: 45.4, dx: -35, dy: 20,
-                title: "45.4% Occupancy",
-                label: "The worst month on record — tourism shut down after the fire."
-            },
-            {
-                m: "2023-11", v: 73.3, dx: 5, dy: 55,
-                title: "A strange rebound",
-                label: "Above 2022 and 2019 — rooms filled by displaced residents, relief workers and returning visitors."
-            }],
-        3: [{
-                m: "2024-02", v: 76.3, dx: -30, dy: -45,
-                title: "76.3% plateau",
-                label: "Occupancy held high while the sheltering program ran." },
-            {
-                m: "2024-09", v: 49.8, dx: 35, dy: 60,
-                title: "49.8% trough",
-                label: "Three months after the program ended, occupancy hit its post-fire low."
-            }],
-    };
-
     const annoG = hotelLayer.append("g");
     function drawAnnos(scene) {
         annoG.selectAll("*").remove();
@@ -178,13 +229,20 @@ Promise.all([
             .annotations(list.map(a => ({
                 x: x(parseMid(a.m)), y: y(a.v),
                 dx: a.dx, dy: a.dy,
-                note: { title: a.title, label: a.label, wrap: 190 },
+                note: { title: a.title, label: a.label, wrap: 200 },
                 subject: { radius: 5 },
             })));
         // fade in after the reframe transition has mostly settled
         annoG.attr("opacity", 0).call(maker)
             .transition().delay(500).duration(300).attr("opacity", 1);
     }
+
+    hotelLayer.append("text")
+        .attr("x", MARGIN.left)
+        .attr("y", 24)
+        .attr("font-size", 13)
+        .attr("font-weight", 600)
+        .text("Hotel occupancy — Lahaina / K\u0101\u2018anapali / Kapalua (HTA)");
 
 
     // --- Scene 4 - The divergence (two panels, one time axis) ---
@@ -197,10 +255,10 @@ Promise.all([
         const hSer = hotel.series.filter(d=>d.m >= START);
         const i0 = airbnb.months.indexOf(START);
         const aCounts = airbnb.bands["0-1km"].slice(i0);
-        const aDates = airbnb.months.slice(i0).map(parseM);
+        const aDates = airbnb.months.slice(i0).map(parseMid);
 
         const x4 = d3.scaleUtc()
-                        .domain([parseM(START), parseM("2026-07")])
+                        .domain([parseMid(START), parseMid("2026-07")])
                         .range([MARGIN.left, CHART_WIDTH - MARGIN.right]);
         const yTop = d3.scaleLinear()
                         .domain([0, 100])
@@ -215,10 +273,13 @@ Promise.all([
             .attr("y", 60)
             .attr("font-size", 13)
             .attr("font-weight", 600)
-            .text("Hotel Occupancy, West Maui (vs 2019 seasonal norm, dashed)");
+            .text("Hotel occupancy, West Maui — vs 2019 seasonal norm, dashed (HTA)");
         s4.append("g")
             .attr("transform", `translate(${MARGIN.left},0)`)
             .call(d3.axisLeft(yTop).ticks(4).tickFormat(d=> d+"%"));
+        s4.append("g")
+            .attr("transform", "translate(0,220)")
+            .call(d3.axisBottom(x4));
         s4.append("path")
             .datum(hSer)
             .attr("fill", "none")
@@ -244,7 +305,7 @@ Promise.all([
             .attr("y", 295)
             .attr("font-size", 13)
             .attr("font-weight", 600)
-            .text("Active Listings within 1km of the burn zone");
+            .text("Active Airbnb listings within 1 km of the burn zone (Inside Airbnb)");
         s4.append("g")
             .attr("transform", `translate(${MARGIN.left},0)`)
             .call(d3.axisLeft(yBot).ticks(4));
@@ -274,18 +335,18 @@ Promise.all([
                 .type(d3.annotationCalloutCircle)
                 .annotations([
                     {
-                        x: x4(parseM("2024-08")),
+                        x: x4(parseMid("2024-08")),
                         y: yBot(5), dx: 40, dy: -40,
                         note: {
                             title: "5 listings",
-                            label: "Active within 1 km of the burn zone, Aug 2024.",
-                            wrap: 160 },
+                            label: "Active within 1 km of the burn zone in August 2024.",
+                            wrap: 200 },
                         subject: { radius: 5 } },
                     {
-                        x: x4(parseM("2026-02")),
-                        y: yTop(76.3), dx: -50, dy: -30,
+                        x: x4(parseMid("2026-02")),
+                        y: yTop(76.3), dx: -50, dy: 40,
                         note: { label: "Only the 2026 peak season touched the 2019 norm.",
-                        wrap: 160 },
+                        wrap: 200 },
                         subject: { radius: 5 } },
                 ]));
         };
@@ -353,7 +414,8 @@ Promise.all([
                             tip.style("display", "block")
                                 .style("left", (ev.pageX+12) + "px")
                                 .style("top", (ev.pageY-10) + "px")
-                                .html(`Band: ${mp.bands[p[2]]}<br>` +
+                                .html(`<b>${mp.months[state.monthIdx]}</b><br>` +
+                                    `Band: ${mp.bands[p[2]]}<br>` +
                                     `Active ${p[3].split("").filter(c=>c === "1").length} of 24 months`
                                 );
                         })
@@ -363,25 +425,23 @@ Promise.all([
 
     // Update the map
     const CLEAN0 = mp.months.indexOf("2024-08");
+    // Area labels (approx. coordinates)
+    const PLACES = [
+        { name: "Kapalua",      lon: -156.666, lat: 21.000 },
+        { name: "Nāpili",       lon: -156.678, lat: 20.994 },
+        { name: "Kāʻanapali",   lon: -156.695, lat: 20.923 },
+        { name: "Lahaina town", lon: -156.679, lat: 20.878 },
+        { name: "Olowalu",      lon: -156.620, lat: 20.811 },
+    ];
     function updateMap() {
         const warn = state.monthIdx < CLEAN0
-                            ? " (review window still includes pre-fire months" : "";
+                            ? " (review window still includes pre-fire months)" : "";
         d3.select("#month-label").text("  " + mp.months[state.monthIdx] + warn);
         dots.attr("display", p=> p[3][state.monthIdx] === "1" ? null : "none");
-        // wheel zoom + drag pan
-        mapSvg.call(d3.zoom()
-            .scaleExtent([1, 8])
-            .on("zoom", (event) => {
-                mapG.attr("transform", event.transform);
-            })
-        )
-        // Area labels (approx. coordinates)
-        const PLACES = [
-            { name: "Kapalua",      lon: -156.666, lat: 21.000 },
-            { name: "Nāpili",       lon: -156.678, lat: 20.994 },
-            { name: "Kāʻanapali",   lon: -156.695, lat: 20.923 },
-            { name: "Lahaina town", lon: -156.679, lat: 20.878 },
-            { name: "Olowalu",      lon: -156.620, lat: 20.811 },
+        }
+        // Region-tier labels (cartographic convention: caps + letterspacing)
+        const REGIONS = [
+            { name: "WEST MAUI",          lon: -156.590, lat: 20.885 },
         ];
         mapG.append("g").selectAll("text")
             .data(PLACES)
@@ -390,14 +450,8 @@ Promise.all([
             .attr("y", d => proj([d.lon, d.lat])[1])
             .attr("font-size", 11)
             .attr("fill", "#333")
-            .attr("border", "2px solid #ccc")
             .attr("text-anchor", "start")
             .text(d => d.name);
-        }
-         // Region-tier labels (cartographic convention: caps + letterspacing)
-        const REGIONS = [
-            { name: "WEST MAUI",          lon: -156.590, lat: 20.885 },
-        ];
         mapG.append("g").selectAll("text")
             .data(REGIONS)
             .join("text")
@@ -408,6 +462,14 @@ Promise.all([
             .attr("letter-spacing", "0.25em")
             .attr("fill", "#bbb")
             .text(d => d.name);
+
+        // wheel zoom + drag pan
+        mapSvg.call(d3.zoom()
+            .scaleExtent([1, 8])
+            .on("zoom", (event) => {
+                mapG.attr("transform", event.transform);
+            })
+        )
 
 
     // --- Scene renderers ---
@@ -449,5 +511,37 @@ Promise.all([
         state.monthIdx = +this.value;
         updateMap();
     })
+    // Play: auto-advance the month slider when the play button is clicked
+    let playTimer = null;
+    function stopPlay() {
+        if (playTimer) {
+            playTimer.stop();
+            playTimer = null;
+        }
+    }
+
+    d3.select("#play").on("click", ()=> {
+        // If the play timer is already running, stop it
+        if (playTimer) {
+            stopPlay();
+            return;
+        }
+        // Reset the month index
+        if (state.monthIdx >= mp.months.length -1) {
+            state.monthIdx = -1;
+        }
+        // Start the play timer
+        d3.select("#play").html("&#10074;&#10074; Pause");
+        playTimer = d3.interval(()=> {
+            state.monthIdx+=1;
+            d3.select("#month-slider").property("value", state.monthIdx);
+            updateMap();
+            if(state.monthIdx >= mp.months.length-1) {
+                stopPlay();
+            }
+        }, 500);
+
+    });
+    // --- Initial render ---
     render();
 });
