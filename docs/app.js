@@ -128,3 +128,59 @@ d3.json("data/airbnb.json").then(data => {
         .attr("fill", "#c0392b").attr("font-size", 12).attr("font-weight", 600)
         .text("West Maui (Lahaina)");
 });
+
+// --- West maui hotel occupancy -----------------------------
+const hotelSvg = d3.select("#hotel");
+const HOTEL_WIDTH = +hotelSvg.attr("width")
+const HOTEL_HEIGHT = +hotelSvg.attr("height");
+const HOTEL_MARGIN = {top: 30, right: 30, bottom: 40, left: 60};
+
+d3.json("data/hotel.json").then(h=>  {
+    const parseM = d3.utcParse("%Y-%m");
+    const dates = h.series.map(d=>parseM(d.m));
+
+    const x = d3.scaleUtc()
+                .domain(d3.extent(dates))
+                .range([ HOTEL_MARGIN.left, HOTEL_WIDTH - HOTEL_MARGIN.right]);
+    // occupancy is a percentage so fix the domain at 0-100 so the crash
+    // reads at true scale
+    const y = d3.scaleLinear()
+                .domain([0, 100])
+                .range([ HOTEL_HEIGHT - HOTEL_MARGIN.bottom, HOTEL_MARGIN.top]);
+
+    hotelSvg.append("g")
+        .attr("transform", `translate(0,${HOTEL_HEIGHT - HOTEL_MARGIN.bottom})`)
+        .call(d3.axisBottom(x));
+    hotelSvg.append("g")
+        .attr("transform", `translate(${HOTEL_MARGIN.left},0)`)
+        .call(d3.axisLeft(y).tickFormat(d=>d+"%"));
+
+    hotelSvg.append("path")
+        .datum(h.series)
+        .attr("fill", "none")
+        .attr("stroke", "#c0392b")
+        .attr("stroke-width", 2.5)
+        .attr("d", d3.line()
+            .x((d, i) => x(dates[i]))
+            .y(d=>y(d.occ)));
+
+    // Vertical event lines from the data layer
+    const parseD = d3.utcParse("%Y-%m-%d");
+    for (const event of h.events) {
+        const eventDate = x(parseD(event.date));
+        hotelSvg.append("line")
+            .attr("x1", eventDate)
+            .attr("x2", eventDate)
+            .attr("y1", HOTEL_MARGIN.top)
+            .attr("y2", HOTEL_HEIGHT - HOTEL_MARGIN.bottom)
+            .attr("stroke", "#555")
+            .attr("stroke-dasharray", "4 3");
+
+        hotelSvg.append("text")
+            .attr("x", eventDate + 4)
+            .attr("y", HOTEL_MARGIN.top + 12)
+            .attr("fill", "#555")
+            .attr("font-size", 11)
+            .text(event.label);
+    }
+});
