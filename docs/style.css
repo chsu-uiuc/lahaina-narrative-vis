@@ -80,11 +80,6 @@ header h1 {
     color: #888;
     font-size: 14px;
 }
-svg { 
-    background: #fff; 
-    max-width: 100%;
-    margin-top: 6px;
-}
 svg text {
     font-family: Arial, sans-serif;
 }
@@ -95,7 +90,7 @@ svg text {
     border: 1px solid #ccc;
     padding:4px 8px;
     font-size: 12px;
-    font-family: Arial, sans-serif
+    font-family: Arial, sans-serif;
     pointer-events: none;
 }
 .annotation path { stroke: #555; fill: none; }
@@ -111,12 +106,9 @@ svg text {
     font-family: Arial, sans-serif;
 }
 #map-legend {
-    margin-bottom: 12px;
-    font-family: Arial, sans-serif;
-}
-#map-legend {
     margin: 6px 0;
     font-size: 12px;
+    font-family: Arial, sans-serif;
 }
 .legend-item {
     margin-right: 14px;
@@ -183,6 +175,7 @@ header h1, .dek, .byline {
 }
 svg { 
     display: block;
+    max-width: 100%;
     margin: 6px auto 0;
     background: #f7f7f7
 }

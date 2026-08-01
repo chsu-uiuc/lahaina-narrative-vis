@@ -120,7 +120,7 @@ Promise.all([
     const plot = hotelLayer.append("g")
                     .attr("clip-path", "url(#plot-clip)");
 
-    // seasonal baselines: calendar-month values mapped onto 2023 dates
+    // Tile the 12month seasonal baseline across all months
     const blLine = key => d3.line()
         .x((d,i) => x(hDates[i]))
         .y(d=> y(hotel.baseline[+d.m.slice(5,7)-1][key]));
@@ -259,7 +259,7 @@ Promise.all([
 
 
     // --- Scene 4 - The divergence (two panels, one time axis) ---
-    // Diff units (% vs listing count) -< stacked panels
+    // Diff units (% vs listing count) -> stacked panels
     let drawS4Annos;
     const s4 = chartSvg.append("g").style("display", "none");
     {
@@ -365,7 +365,7 @@ Promise.all([
                 .duration(3600)
                 .ease(d3.easeCubicInOut)
                 .attr("stroke-dashoffset", 0)
-                .on("end", ()=> airbnbPath4.attr("stroke-dasharry", null));
+                .on("end", ()=> airbnbPath4.attr("stroke-dasharray", null));
             label123.attr("opacity", 0)
                 .transition()
                 .delay(3200)
@@ -406,6 +406,7 @@ Promise.all([
     const geoPath = d3.geoPath(proj);
     const mapG = mapSvg.append("g");
 
+    // Draw the coast and burn area layers
     mapG.append("path")
             .datum(coast)
             .attr("fill", "#f2f0eb")
@@ -418,6 +419,7 @@ Promise.all([
             .attr("stroke", "#c0392b")
             .attr("d", geoPath);
 
+    // Color scale for distance bands
     const bandColor = d3.scaleOrdinal()
                         .domain(d3.range(mp.bands.length))
                         .range(["#7b241c", "#c0392b", "#e67e22",
@@ -433,6 +435,7 @@ Promise.all([
         item.append("span").text(b);
     });
 
+    // Add the burn area to the legend
     const burnItem = legend.append("span").attr("class", "legend-item");
     burnItem.append("span")
                 .attr("class", "legend-swatch")
@@ -474,9 +477,8 @@ Promise.all([
         { name: "Lahaina town", lon: -156.679, lat: 20.878 },
         { name: "Olowalu",      lon: -156.620, lat: 20.811 },
     ];
+
     function updateMap() {
-        const warn = state.monthIdx < CLEAN0
-                            ? " (review window still includes pre-fire months)" : "";
         d3.select("#month-label").text(mp.months[state.monthIdx]);
         d3.select("#ltm-warn").style("visibility", state.monthIdx < CLEAN0 ? "visible" : "hidden");
         dots.attr("display", p=> p[3][state.monthIdx] === "1" ? null : "none");
@@ -540,7 +542,7 @@ Promise.all([
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 1.5)
                         .style("display", "none");
-    const fmtM = d3.timeFormat("%b %Y");
+    const fmtM = d3.utcFormat("%b %Y");
     const bisectDate = d3.bisector(d=>d).center;
 
     plot.append("rect")
@@ -563,19 +565,14 @@ Promise.all([
                     .html(`<b>${fmtM(hDates[i])}</b><br>Occupancy: ${d.occ}%`);
             })
             .on("pointerout", () => {
-                focusDot.style("display", "block")
-                        .style("left", (ev.pageX + 12) + "px")
-                        .style("top", (ev.pageY - 10) + "px")
-                        .html(`<b>${fmtM(hDates[i])}</b><br>Occupancy: ${d.occ}%`);
-            })
-            .on("pointerout", () => {
                 focusDot.style("display", "none");
                 d3.select("#tooltip").style("display", "none");
             });
     eventG.raise();
 
-
+    // Render function updates the scene label, text, and visibility of chart
     function render() {
+        // Update the scene content: label, text, and navigation buttons
         d3.select("#scene-label").html(
             d3.range(1, NSCENES+1).map(i=>
                 `<span style="color:${i === state.scene ? '#c0392b': '#ccc'}">\u25cf</span>`
@@ -596,14 +593,6 @@ Promise.all([
     }
 
     // --- Triggers ---
-    d3.select("#next").on("click", ()=> {
-        state.scene = Math.min(NSCENES, state.scene +1);
-        render();
-    });
-    d3.select("#prev").on("click", ()=> {
-        state.scene = Math.max(1, state.scene -1);
-        render();
-    });
     d3.select("#month-slider").on("input", function() {
         state.monthIdx = +this.value;
         updateMap();
@@ -625,6 +614,7 @@ Promise.all([
             return;
         }
         // Reset the month index
+        // At the last month, Play restarts from the beginning
         if (state.monthIdx >= mp.months.length -1) {
             state.monthIdx = -1;
         }
@@ -640,6 +630,7 @@ Promise.all([
         }, 500);
 
     });
+
     function goToScene(delta) {
         stopPlay();
         state.scene = Math.max(1, Math.min(NSCENES, state.scene + delta));
@@ -647,8 +638,21 @@ Promise.all([
         d3.select("#scene-nav").node()
             .scrollIntoView({behavior: "smooth", block: "start"});
     }
+
+    // Go to next or previous scene when the navigation buttons are clicked
     d3.select("#next").on("click", ()=> goToScene(1));
     d3.select("#prev").on("click", ()=> goToScene(-1));
+
+    // Keyboard navigation: left and right arrow keys to navigate the scenes
+    d3.select(window).on("keydown", (event)=> {
+        // Ignore key events if it's coming from an input element
+        // Let the focused slider keep its native arrow-key behavior
+        if (event.target.tagName == "INPUT") return;
+        // If right arrow key is pressed, go to the next scene
+        if (event.key === "ArrowRight") goToScene(1);
+        // if the left arrow key is pressed, go to the previous scene
+        if (event.key === "ArrowLeft") goToScene(-1);
+    });
     // --- Initial render ---
     render();
 });
