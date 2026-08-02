@@ -53,7 +53,7 @@ const SCENE_TEXT = {
     "grew from 5 to 123 \u2014 a twenty-five-fold increase. The market recovered \u2014 " +
     "just not as the same market.",
 
-    5: "Now explore it yourself. Each dot is one listing, colored by its distance " +
+    5: "Now explore it yourself. Each dot is one Airbnb listing, colored by its distance " +
     "to the burned area; drag the slider to move through time, zoom and hover for details. " +
     "Months before August 2024 still carry pre-fire activity in their review window \u2014 "+
     "read them with care.",
@@ -341,6 +341,78 @@ Promise.all([
             .attr("font-weight", 600)
             .text(aCounts[aCounts.length -1]);
 
+        // Shared hover readout - one tooltip for both panels
+        const aMonths = airbnb.months.slice(i0);
+        const occByM = new Map(hSer.map(d=>[d.m, d.occ]));
+        const cntByM = new Map(aMonths.map((m,j)=>[m, aCounts[j]]));
+        const tipMonths = [...new Set([...hSer.map(d=>d.m), ...aMonths])].sort();
+        const tipDates = tipMonths.map(parseMid);
+        const fmtM4 = d3.utcFormat("%b %Y");
+        const bisect4 = d3.bisector(d=>d).center;
+        // Focus dot for the top panel (hotel occupancy)
+        const focusDotTop = s4.append("circle")
+                                .attr("r", 6)
+                                .attr("fill", "#7f8c8d")
+                                .attr("stroke", "#fff")
+                                .attr("stroke-width", 1.5)
+                                .style("display", "none");
+        const focusDotBottom = s4.append("circle")
+                                .attr("r", 6)
+                                .attr("fill", "#c0392b")
+                                .attr("stroke", "#fff")
+                                .attr("stroke-width", 1.5)
+                                .style("display", "none");
+        s4.append("rect")
+            .attr("x", MARGIN.left)
+            .attr("y", 70)
+            .attr("width", CHART_WIDTH-MARGIN.left - MARGIN.right)
+            .attr("height", 390)
+            .attr("fill", "transparent")
+            .on("pointermove", (event)=>{
+                const [mx] = d3.pointer(event);
+                const i = bisect4(tipDates, x4.invert(mx));
+                const m = tipMonths[i];
+                let rows = "";
+                if (occByM.has(m)) {
+                    // Show the focus dot for top panel
+                    focusDotTop.style("display", null)
+                                .attr("cx", x4(tipDates[i]))
+                                .attr("cy", yTop(occByM.get(m)));
+                    // Update the tooltip row for the top panel
+                    rows += `Hotel occupancy: ${occByM.get(m)}%<br>`;
+                } else{
+                    // Hide the focus dot for the top panel
+                    focusDotTop.style("display","none");
+                    // Update the tooltip row if no data for the top panel
+                    rows += `Hotel occupancy: no data for this month.<br>`;
+                }
+                if (cntByM.has(m)) {
+                    // Show the focus dot for bottom panel
+                    focusDotBottom.style("display", null)
+                                .attr("cx", x4(tipDates[i]))
+                                .attr("cy", yBot(cntByM.get(m)));
+                    // Update the tooltip row for the bottom panel
+                    rows += `Airbnb listings within 1km: ${cntByM.get(m)}<br>`;
+                } else {
+                    // Hide the focus dot for the bottom panel
+                    focusDotBottom.style("display","none");
+                    // Update the tooltip if no data for the bottom panel
+                    rows +=`Airbnb listings: no data for this month.<br>`;
+                }
+                d3.select("#tooltip")
+                    .style("display", "block")
+                    .style("left", (event.pageX+12)+"px")
+                    .style("top", (event.pageY-10)+"px")
+                    .html(`<b>${fmtM4(tipDates[i])}</b><br>` + rows);
+            })
+            .on("pointerout", ()=> {
+                // Hide the focus dots
+                focusDotTop.style("display", "none");
+                focusDotBottom.style("display", "none");
+                // Hide the tooltip
+                d3.select("#tooltip").style("display", "none")
+            });
+
         const s4annoG = s4.append("g");
         drawS4Annos = () => {
             // Hotel line animation: color handoff
@@ -513,8 +585,21 @@ Promise.all([
             .on("zoom", (event) => {
                 mapG.attr("transform", event.transform);
                 mapSvg.style("cursor", event.transform.k > 1 ? "grab" : "zoom-in")
-        })
-        )
+            })
+        );
+
+        // Map title that fixed to the SVG frame
+        const mapTitle = mapSvg.append("text")
+            .attr("x", 24)
+            .attr("y", 40)
+            .attr("font-size", 13)
+            .attr("font-weight", 600);
+        mapTitle.append("tspan")
+            .text("Active Airbnb listings, West Maui")
+        mapTitle.append("tspan")
+            .attr("x", 24)
+            .attr("y", 56)
+            .text("\u2014 by distance to the burn zone (Inside Airbnb)");
 
 
     // --- Scene renderers ---

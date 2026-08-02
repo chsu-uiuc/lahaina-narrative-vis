@@ -45,6 +45,7 @@ header h1 {
     font-size: 13px;
     color: #777;
     font-family: Arial, sans-serif;
+    margin-top: 36px;
 }
 #scene-nav {
     display: flex;
